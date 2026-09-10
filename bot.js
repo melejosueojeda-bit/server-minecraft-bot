@@ -5,10 +5,10 @@ function createBot() {
 
     const client = bedrock.createClient({
         host: 'Mell0108.aternos.me', // Hostname del servidor Aternos Bedrock
-        port: 19132,                 // Puerto por defecto de Bedrock Edition (UDP)
+        port: 29494,                 // Puerto del servidor Aternos (asignado dinámicamente)
         username: 'Raboot_356',      // Nombre del bot dentro del juego
         offline: true,               // Servidor sin autenticación premium (cracked/offline)
-        version: '1.21.44'           // Versión de Bedrock Edition del servidor
+        version: '1.26.45.1'         // Versión exacta de Bedrock del servidor
     });
 
     client.on('spawn', () => {
