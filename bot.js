@@ -1,31 +1,65 @@
 const bedrock = require('bedrock-protocol');
 
-// Mantiene el proceso activo en el runner de GitHub Actions
+// Mantiene activo el script en el servidor de GitHub Actions
 setInterval(() => {}, 1000 * 60 * 60);
 
 function createBot() {
-    console.log('[NPC] Conectando bot al servidor de Minecraft Bedrock (Craqueado listo)...');
+    console.log('[NPC] Conectando bot al servidor de Minecraft Bedrock...');
 
     try {
         const client = bedrock.createClient({
-            host: 'Mell0108.aternos.me', // Dirección de Aternos Bedrock
-            port: 29494,                 // Puerto asignado por Aternos
-            username: 'Raboot_356',      // Nombre del bot dentro del juego
-            offline: true,               // Modo sin cuenta Xbox Live premium
-            skipPing: true               // Conexión directa RakNet
+            host: 'Mell0108.aternos.me', // Host de Aternos Bedrock
+            port: 29494,                 // Puerto dinámico de Aternos
+            username: 'Raboot_356',      // Nombre del NPC dentro del juego
+            offline: true,               // Servidor Craqueado / No-Premium
+            skipPing: true               // Salto de ping para conexión directa
         });
+
+        let keepAliveTimer;
 
         client.on('spawn', () => {
             console.log('====================================================');
-            console.log('[NPC] ¡ÉXITO TOTAL! El bot ha entrado al servidor Bedrock.');
+            console.log('[NPC] ¡ÉXITO! Raboot_356 ha aparecido en el servidor.');
             console.log('====================================================');
 
-            // Rutina Anti-AFK cada 20 segundos
-            setInterval(() => {
-                if (client) {
-                    console.log('[NPC] Anti-AFK activo: simulando presencia.');
+            // Enviar movimiento anti-inactividad cada 15 segundos para evitar el crash/kick por AFK de Aternos
+            keepAliveTimer = setInterval(() => {
+                if (client && client.status === 'active') {
+                    try {
+                        // Enviar simulación de mirada y tick de juego
+                        client.write('player_auth_input', {
+                            pitch: 0,
+                            yaw: Math.floor(Math.random() * 360),
+                            position: { x: 0, y: 64, z: 0 },
+                            move_vector: { x: 0, z: 0 },
+                            head_yaw: 0,
+                            input_data: 0,
+                            input_mode: 'touch',
+                            play_mode: 'normal',
+                            interaction_model: 'touch',
+                            gaze_direction: { x: 0, y: 0, z: 0 },
+                            tick: 0n,
+                            delta: { x: 0, y: 0, z: 0 },
+                            transaction: null,
+                            item_stack_request: null,
+                            block_action: []
+                        });
+                        console.log('[NPC] Anti-AFK: Movimiento simulado en el servidor.');
+                    } catch (e) {
+                        // Si el paquete no coincide exactamente con la subversión, simplemente enviamos interact
+                        try {
+                            client.write('text', {
+                                type: 'chat',
+                                needs_translation: false,
+                                source_name: 'Raboot_356',
+                                message: '.afk',
+                                xuid: '',
+                                platform_chat_id: ''
+                            });
+                        } catch (_) {}
+                    }
                 }
-            }, 20000);
+            }, 15000);
         });
 
         client.on('join', () => {
@@ -33,23 +67,25 @@ function createBot() {
         });
 
         client.on('disconnect', (packet) => {
-            console.log(`[NPC] Desconectado: ${JSON.stringify(packet)}`);
-            console.log('[NPC] Reintentando en 15 segundos...');
-            setTimeout(createBot, 15000);
+            if (keepAliveTimer) clearInterval(keepAliveTimer);
+            console.log(`[NPC] Desconectado por el servidor: ${JSON.stringify(packet)}`);
+            console.log('[NPC] Reintentando conexión en 20 segundos...');
+            setTimeout(createBot, 20000);
         });
 
         client.on('error', (err) => {
-            console.log(`[NPC] Error en red Bedrock: ${err.message}`);
+            console.log(`[NPC] Error detectado: ${err.message}`);
         });
 
         client.on('close', () => {
-            console.log('[NPC] Conexión cerrada. Reintentando en 15 segundos...');
-            setTimeout(createBot, 15000);
+            if (keepAliveTimer) clearInterval(keepAliveTimer);
+            console.log('[NPC] Conexión cerrada. Reintentando en 20 segundos...');
+            setTimeout(createBot, 20000);
         });
 
     } catch (error) {
         console.log(`[NPC] Error en inicialización: ${error.message}`);
-        setTimeout(createBot, 15000);
+        setTimeout(createBot, 20000);
     }
 }
 
