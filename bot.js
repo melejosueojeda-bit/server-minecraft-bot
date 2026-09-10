@@ -2,8 +2,8 @@ const mineflayer = require('mineflayer');
 
 function createBot() {
     const bot = mineflayer.createBot({
-        host: 'Mell0108.aternos.me', // IP del servidor Aternos
-        port: 29494,                // Puerto del servidor
+        host: 'Mell0108.aternos.me', // Hostname del servidor Aternos
+        port: 25565,                // Puerto por defecto - el SRV DNS de Aternos resuelve el puerto real automáticamente
         username: 'Raboot_356',    // Nombre genérico del bot/NPC dentro del juego
         version: false              // Autodetecta la versión exacta del servidor (1.8 a 1.21+)
     });
