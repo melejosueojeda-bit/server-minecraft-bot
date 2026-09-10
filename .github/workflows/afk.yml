@@ -3,7 +3,12 @@ name: Minecraft NPC Bot 24/7
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: # Permite encender el NPC de forma manual desde el panel web
+  workflow_dispatch:
+
+# Esta configuración Cancela automáticamente cualquier bot anterior para que SOLO HAYA 1 corriendo a la vez
+concurrency:
+  group: minecraft-bot-single-instance
+  cancel-in-progress: true
 
 jobs:
   run-bot:
