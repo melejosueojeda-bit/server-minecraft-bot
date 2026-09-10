@@ -1,55 +1,55 @@
 const bedrock = require('bedrock-protocol');
 
-// Previene que Node.js se cierre en GitHub Actions
+// Mantiene el proceso activo en el runner de GitHub Actions
 setInterval(() => {}, 1000 * 60 * 60);
 
 function createBot() {
-    console.log('[NPC] Conectando bot al servidor de Minecraft Bedrock en Aternos...');
+    console.log('[NPC] Conectando bot al servidor de Minecraft Bedrock (Craqueado listo)...');
 
     try {
         const client = bedrock.createClient({
-            host: 'Mell0108.aternos.me', // Dirección de Aternos
-            port: 29494,                 // Puerto dinámico asignado por Aternos
+            host: 'Mell0108.aternos.me', // Dirección de Aternos Bedrock
+            port: 29494,                 // Puerto asignado por Aternos
             username: 'Raboot_356',      // Nombre del bot dentro del juego
-            offline: true,               // Servidor sin autenticación Xbox Live (no-premium)
-            skipPing: true               // Evita el timeout conectando directamente via RakNet
+            offline: true,               // Modo sin cuenta Xbox Live premium
+            skipPing: true               // Conexión directa RakNet
         });
 
         client.on('spawn', () => {
-            console.log('----------------------------------------------------');
-            console.log('[NPC] ¡ÉXITO! El bot ha entrado correctamente al servidor.');
-            console.log('----------------------------------------------------');
+            console.log('====================================================');
+            console.log('[NPC] ¡ÉXITO TOTAL! El bot ha entrado al servidor Bedrock.');
+            console.log('====================================================');
 
-            // Rutina Anti-AFK cada 30 segundos
+            // Rutina Anti-AFK cada 20 segundos
             setInterval(() => {
                 if (client) {
-                    console.log('[NPC] Anti-AFK: Bot activo en el servidor.');
+                    console.log('[NPC] Anti-AFK activo: simulando presencia.');
                 }
-            }, 30000);
+            }, 20000);
         });
 
         client.on('join', () => {
-            console.log('[NPC] Uniéndose al mundo Bedrock...');
+            console.log('[NPC] Entrando al mundo de Bedrock...');
         });
 
         client.on('disconnect', (packet) => {
-            console.log(`[NPC] Desconectado del servidor. Razón: ${JSON.stringify(packet)}`);
-            console.log('[NPC] Reintentando conexión en 20 segundos...');
-            setTimeout(createBot, 20000);
+            console.log(`[NPC] Desconectado: ${JSON.stringify(packet)}`);
+            console.log('[NPC] Reintentando en 15 segundos...');
+            setTimeout(createBot, 15000);
         });
 
         client.on('error', (err) => {
-            console.log(`[NPC] Error de conexión: ${err.message}`);
+            console.log(`[NPC] Error en red Bedrock: ${err.message}`);
         });
 
         client.on('close', () => {
-            console.log('[NPC] Conexión cerrada. Reintentando en 20 segundos...');
-            setTimeout(createBot, 20000);
+            console.log('[NPC] Conexión cerrada. Reintentando en 15 segundos...');
+            setTimeout(createBot, 15000);
         });
 
     } catch (error) {
-        console.log(`[NPC] Error crítico al inicializar bot: ${error.message}`);
-        setTimeout(createBot, 20000);
+        console.log(`[NPC] Error en inicialización: ${error.message}`);
+        setTimeout(createBot, 15000);
     }
 }
 
