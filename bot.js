@@ -1,69 +1,62 @@
-const mineflayer = require('mineflayer');
+const bedrock = require('bedrock-protocol');
 
 function createBot() {
-    const bot = mineflayer.createBot({
-        host: 'Mell0108.aternos.me', // Hostname del servidor Aternos
-        port: 25565,                // Puerto por defecto - el SRV DNS de Aternos resuelve el puerto real automáticamente
-        username: 'Raboot_356',    // Nombre genérico del bot/NPC dentro del juego
-        version: false              // Autodetecta la versión exacta del servidor (1.8 a 1.21+)
+    console.log('[NPC] Intentando conectar al servidor Bedrock...');
+
+    const client = bedrock.createClient({
+        host: 'Mell0108.aternos.me', // Hostname del servidor Aternos Bedrock
+        port: 19132,                 // Puerto por defecto de Bedrock Edition (UDP)
+        username: 'Raboot_356',      // Nombre del bot dentro del juego
+        offline: true,               // Servidor sin autenticación premium (cracked/offline)
+        version: '1.21.44'           // Versión de Bedrock Edition del servidor
     });
 
-    bot.on('spawn', () => {
-        console.log(`[NPC] El bot ha aparecido correctamente en el mapa.`);
-        // Si tu servidor No-Premium requiere contraseña, descomenta la línea de abajo:
-        // setTimeout(() => bot.chat('/login erickJKN'), 4000);
-    });
+    client.on('spawn', () => {
+        console.log('[NPC] ¡Bot conectado y visible en el servidor!');
 
-    bot.on('login', () => {
-        console.log(`[NPC] Conexión establecida con el servidor de Minecraft.`);
-    });
-
-    // Rutina automatizada del NPC: Buscar cofre, interactuar, cerrar y saltar (Cada 45 segundos)
-    setInterval(async () => {
-        if (!bot || !bot.entity) return;
-
-        try {
-            // 1. Localizar el bloque de cofre en un radio de 5 bloques
-            const chestBlock = bot.findBlock({
-                matching: bot.registry.blocksByName.chest.id,
-                maxDistance: 5
-            });
-
-            if (chestBlock) {
-                console.log('[NPC] Interactuando con el contenedor cercano...');
-                
-                // 2. Abrir el contenedor (genera la animación y sonido físico en el servidor)
-                const chest = await bot.openChest(chestBlock);
-                console.log('[NPC] Contenedor abierto.');
-                
-                // Mantener la interfaz abierta durante 2 segundos simulando actividad de inventario
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                
-                // 3. Cerrar la interfaz del contenedor
-                chest.close();
-                console.log('[NPC] Contenedor cerrado.');
-            } else {
-                console.log('[NPC] Aviso: No se detectó ningún contenedor válido cerca.');
+        // Rutina Anti-AFK: acción cada 45 segundos para evitar ser expulsado por inactividad
+        const afkInterval = setInterval(() => {
+            if (!client || client.status === 'disconnected') {
+                clearInterval(afkInterval);
+                return;
             }
 
-            // 4. Ejecutar acción de salto físico para evitar la inactividad (Anti-AFK)
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            bot.setControlState('jump', true);
-            setTimeout(() => bot.setControlState('jump', false), 500);
-            console.log('[NPC] Acción anti-inactividad completada con éxito.');
+            try {
+                // Enviar paquete de movimiento para simular actividad del jugador
+                client.write('interact', {
+                    action_id: 0,
+                    to_entity_id: 0,
+                    head_position: { x: 0, y: 0, z: 0 }
+                });
+                console.log('[NPC] Acción anti-inactividad ejecutada correctamente.');
+            } catch (err) {
+                console.log(`[NPC] Error en ciclo anti-AFK: ${err.message}`);
+                clearInterval(afkInterval);
+            }
+        }, 45000);
+    });
 
-        } catch (err) {
-            console.log(`[NPC] Error en el ciclo de ejecución: ${err.message}`);
-        }
-    }, 45000);
+    client.on('login', () => {
+        console.log('[NPC] Conexión establecida con el servidor Bedrock.');
+    });
 
-    // Sistema de auto-reconexión segura tras expulsiones o reinicios del servidor
-    bot.on('end', (reason) => {
-        console.log(`[NPC] Conexión finalizada por: ${reason}. Reintentando en 25 segundos...`);
+    // Reconexión automática al ser desconectado
+    client.on('disconnect', (packet) => {
+        const reason = packet?.message || 'desconocido';
+        console.log(`[NPC] Desconectado del servidor: ${reason}. Reintentando en 25 segundos...`);
+        try { client.close(); } catch (_) {}
         setTimeout(createBot, 25000);
     });
 
-    bot.on('error', (err) => console.log(`[NPC] Error crítico de red detectado: ${err}`));
+    // Reconexión automática si la conexión se cierra por cualquier motivo
+    client.on('close', () => {
+        console.log('[NPC] Conexión cerrada inesperadamente. Reintentando en 25 segundos...');
+        setTimeout(createBot, 25000);
+    });
+
+    client.on('error', (err) => {
+        console.log(`[NPC] Error crítico de red: ${err.message}`);
+    });
 }
 
 createBot();

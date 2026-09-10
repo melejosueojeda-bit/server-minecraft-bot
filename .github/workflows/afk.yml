@@ -17,8 +17,8 @@ jobs:
       with:
         node-version: 18
 
-    - name: Instalar dependencias de Mineflayer
-      run: npm install mineflayer
+    - name: Instalar dependencias de Bedrock Protocol
+      run: npm install bedrock-protocol
 
     - name: Ejecutar script del NPC
       run: node bot.js
