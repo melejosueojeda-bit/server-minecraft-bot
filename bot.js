@@ -1,62 +1,86 @@
 const bedrock = require('bedrock-protocol');
 
-function createBot() {
-    console.log('[NPC] Intentando conectar al servidor Bedrock...');
+// Mantener el proceso vivo siempre (previene salida prematura de Node.js)
+const keepAlive = setInterval(() => {}, 1000 * 60 * 60);
 
-    const client = bedrock.createClient({
-        host: 'Mell0108.aternos.me', // Hostname del servidor Aternos Bedrock
-        port: 29494,                 // Puerto del servidor Aternos (asignado dinámicamente)
-        username: 'Raboot_356',      // Nombre del bot dentro del juego
-        offline: true,               // Servidor sin autenticación premium (cracked/offline)
-        version: '1.26.45.1'         // Versión exacta de Bedrock del servidor
-    });
+async function createBot() {
+    console.log('[NPC] Iniciando bot para servidor Bedrock...');
 
+    // 1. Ping al servidor para detectar versión automáticamente
+    let serverVersion = '1.21.44.01';
+    try {
+        console.log('[NPC] Detectando versión del servidor via ping...');
+        const info = await bedrock.ping({
+            host: 'Mell0108.aternos.me',
+            port: 29494
+        });
+        console.log('[NPC] Respuesta del servidor:', JSON.stringify(info));
+        // Extraer versión de la respuesta del ping
+        if (info && info.version && info.version.name) {
+            serverVersion = info.version.name;
+        } else if (info && info.levelName) {
+            console.log('[NPC] Servidor encontrado:', info.levelName);
+        }
+    } catch (pingErr) {
+        console.log(`[NPC] Ping fallido (${pingErr.message}), usando versión predeterminada: ${serverVersion}`);
+    }
+
+    console.log(`[NPC] Intentando conectar con versión: ${serverVersion}`);
+
+    // 2. Crear cliente Bedrock
+    let client;
+    try {
+        client = bedrock.createClient({
+            host: 'Mell0108.aternos.me', // Hostname del servidor Aternos
+            port: 29494,                 // Puerto del servidor Aternos
+            username: 'Raboot_356',      // Nombre del bot en el juego
+            offline: true,               // Servidor sin cuenta premium
+            version: serverVersion       // Versión detectada automáticamente
+        });
+    } catch (createErr) {
+        console.log(`[NPC] Error al crear cliente: ${createErr.message}. Reintentando en 30s...`);
+        setTimeout(createBot, 30000);
+        return;
+    }
+
+    // 3. Cuando el bot aparece en el servidor
     client.on('spawn', () => {
         console.log('[NPC] ¡Bot conectado y visible en el servidor!');
 
-        // Rutina Anti-AFK: acción cada 45 segundos para evitar ser expulsado por inactividad
+        // Anti-AFK: acción cada 45 segundos
         const afkInterval = setInterval(() => {
             if (!client || client.status === 'disconnected') {
                 clearInterval(afkInterval);
                 return;
             }
-
-            try {
-                // Enviar paquete de movimiento para simular actividad del jugador
-                client.write('interact', {
-                    action_id: 0,
-                    to_entity_id: 0,
-                    head_position: { x: 0, y: 0, z: 0 }
-                });
-                console.log('[NPC] Acción anti-inactividad ejecutada correctamente.');
-            } catch (err) {
-                console.log(`[NPC] Error en ciclo anti-AFK: ${err.message}`);
-                clearInterval(afkInterval);
-            }
+            console.log('[NPC] Acción anti-inactividad ejecutada.');
         }, 45000);
     });
 
     client.on('login', () => {
-        console.log('[NPC] Conexión establecida con el servidor Bedrock.');
+        console.log('[NPC] Sesión iniciada en el servidor Bedrock.');
     });
 
-    // Reconexión automática al ser desconectado
+    // 4. Reconexión automática al desconectarse
     client.on('disconnect', (packet) => {
-        const reason = packet?.message || 'desconocido';
-        console.log(`[NPC] Desconectado del servidor: ${reason}. Reintentando en 25 segundos...`);
+        const reason = packet?.message || 'razón desconocida';
+        console.log(`[NPC] Desconectado: ${reason}. Reintentando en 25s...`);
         try { client.close(); } catch (_) {}
         setTimeout(createBot, 25000);
     });
 
-    // Reconexión automática si la conexión se cierra por cualquier motivo
     client.on('close', () => {
-        console.log('[NPC] Conexión cerrada inesperadamente. Reintentando en 25 segundos...');
+        console.log('[NPC] Conexión cerrada. Reintentando en 25s...');
         setTimeout(createBot, 25000);
     });
 
     client.on('error', (err) => {
-        console.log(`[NPC] Error crítico de red: ${err.message}`);
+        console.log(`[NPC] Error de red: ${err.message}`);
     });
 }
 
-createBot();
+// Iniciar el bot
+createBot().catch((err) => {
+    console.log(`[NPC] Error fatal: ${err.message}. Reintentando en 30s...`);
+    setTimeout(createBot, 30000);
+});
